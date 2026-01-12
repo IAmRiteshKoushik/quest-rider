@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "quest-rider",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
