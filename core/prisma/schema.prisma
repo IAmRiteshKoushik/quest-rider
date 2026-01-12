@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRoleEnum {
+  STUDENT
+  EDUCATOR
+  ADMIN
+}
+
+enum SubmissionTypeEnum {
+  TEST
+  SUBMIT
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  bio          String?
+  email        String       @unique
+  password     String
+  phoneNumber  String
+  role         UserRoleEnum @default(STUDENT)
+  refreshToken String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  Courses           Course[]
+  CourseEnrollments CourseEnrollments[]
+  Submissions       Submissions[]
+  UnlockedModules   UnlockedModules[]
+  UnlockedStages    UnlockedStages[]
+}
+
+// To be used only for STUDENT role. EDUCATOR to be created by ADMIN.
+model UserOnboarding {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String
+  password    String
+  phoneNumber String
+  otp         String
+  createdAt   DateTime @default(now())
+  expiryAt    DateTime
+}
+
+model Course {
+  id          String    @id @default(uuid())
+  educatorId  String
+  title       String
+  description String?
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  educator          User                @relation(fields: [educatorId], references: [id])
+  Module            Module[]
+  CourseEnrollments CourseEnrollments[]
+}
+
+model Module {
+  id           String   @id @default(uuid())
+  courseId     String
+  title        String
+  description  String?
+  prevModuleId String?  @unique
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  prevModule Module? @relation("ModuleSequence", fields: [prevModuleId], references: [id])
+  nextModule Module? @relation("ModuleSequence")
+
+  course          Course            @relation(fields: [courseId], references: [id])
+  Stages          Stage[]
+  UnlockedModules UnlockedModules[]
+}
+
+model Stage {
+  id          String   @id @default(uuid())
+  moduleId    String
+  title       String
+  description String?
+  prevStageId String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prevStage Stage? @relation("StageSequence", fields: [prevStageId], references: [id])
+  nextStage Stage? @relation("StageSequence")
+
+  module         Module           @relation(fields: [moduleId], references: [id])
+  Tests          Tests[]
+  Submissions    Submissions[]
+  UnlockedStages UnlockedStages[]
+}
+
+model Tests {
+  id         String   @id @default(uuid())
+  orderIdx   Int
+  stageId    String
+  name       String
+  script     String
+  submitOnly Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  stage Stage @relation(fields: [stageId], references: [id])
+}
+
+model CourseEnrollments {
+  id         String   @id @default(uuid())
+  courseId   String
+  userId     String
+  enrolledAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Submissions {
+  id              String             @id @default(uuid())
+  userId          String
+  stageId         String
+  submissionType  SubmissionTypeEnum @default(TEST)
+  hasPassed       Boolean
+  stdout          String
+  stderr          String
+  exitCode        Int
+  cliVersion      String
+  executionTimeMs Int?
+  submittedAt     DateTime           @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  stage Stage @relation(fields: [stageId], references: [id])
+}
+
+model UnlockedModules {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  moduleId   String
+  unlockedOn DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  module Module @relation(fields: [moduleId], references: [id])
+}
+
+model UnlockedStages {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  stageId    String
+  unlockedOn DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  stage Stage @relation(fields: [stageId], references: [id])
+}
