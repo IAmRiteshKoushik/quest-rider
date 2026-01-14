@@ -7,6 +7,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from './env';
 import { logger } from './logger';
+import { HealthService } from './services/health.service';
 
 // Initialize Prisma Client with PostgreSQL Adapter
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -15,6 +16,9 @@ const prisma = new PrismaClient({ adapter });
 
 // Initialize Redis Client
 const redis = new Redis(env.REDIS_URL);
+
+// Initialize Services
+const healthService = new HealthService(prisma, redis);
 
 // Initialize Express App
 const app = express();
@@ -27,35 +31,7 @@ app.use(pinoHttp({ logger }));
 
 // Basic Health Check Route
 app.get('/health', async (req, res) => {
-  const healthStatus = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    services: {
-      db: 'unknown',
-      redis: 'unknown',
-    },
-  };
-
-  try {
-    // Check Database connection
-    await prisma.$queryRaw`SELECT 1`;
-    healthStatus.services.db = 'up';
-  } catch (error) {
-    logger.error(error, 'Database health check failed');
-    healthStatus.services.db = 'down';
-    healthStatus.status = 'error';
-  }
-
-  try {
-    // Check Redis connection
-    await redis.ping();
-    healthStatus.services.redis = 'up';
-  } catch (error) {
-    logger.error(error, 'Redis health check failed');
-    healthStatus.services.redis = 'down';
-    healthStatus.status = 'error';
-  }
-
+  const healthStatus = await healthService.getHealthStatus();
   const statusCode = healthStatus.status === 'ok' ? 200 : 503;
   res.status(statusCode).json(healthStatus);
 });
