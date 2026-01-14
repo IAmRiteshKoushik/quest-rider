@@ -1,40 +1,35 @@
 import express from 'express';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
-import Redis from 'ioredis';
-import { PrismaClient } from './generated/prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import cookieParser from 'cookie-parser';
 import { env } from './env';
 import { logger } from './logger';
-import { HealthService } from './services/health.service';
-
-// Initialize Prisma Client with PostgreSQL Adapter
-const pool = new Pool({ connectionString: env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
-// Initialize Redis Client
-const redis = new Redis(env.REDIS_URL);
-
-// Initialize Services
-const healthService = new HealthService(prisma, redis);
+import { getHealthStatus } from './services/health.service';
+import { authRouter } from './routes/auth.routes';
+import { prisma } from './db';
+import { redis } from './redis';
+import { errorHandler } from './middlewares/error.middleware';
 
 // Initialize Express App
 const app = express();
 
 // Setup Middleware
 app.use(helmet());
+app.use(cookieParser());
 app.use(express.json());
+app.use(errorHandler);
 app.use(express.urlencoded({ extended: true }));
 app.use(pinoHttp({ logger }));
 
 // Basic Health Check Route
 app.get('/health', async (req, res) => {
-  const healthStatus = await healthService.getHealthStatus();
+  const healthStatus = await getHealthStatus();
   const statusCode = healthStatus.status === 'ok' ? 200 : 503;
   res.status(statusCode).json(healthStatus);
 });
+
+// Mount Routes
+app.use('/auth', authRouter);
 
 // Start Server
 const port = env.PORT;
@@ -85,4 +80,4 @@ const shutdown = async (signal: string) => {
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
 
-export { app, prisma, redis };
+export { app };
