@@ -4,7 +4,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(0).max(65535).default(8080),
   DATABASE_URL: z.url(),
   REDIS_URL: z.url(),
-  APP_SECRET: z.string().startsWith("v4.local."),
+  APP_SECRET: z.string().startsWith("k4.local."),
   ACCESS_TOKEN_EXPIRE_MINUTES: z.coerce.number().default(15),
   REFRESH_TOKEN_EXPIRE_DAYS: z.coerce.number().default(30),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
