@@ -15,6 +15,7 @@ const envSchema = z.object({
   REDIS_URL: z.string(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
+  SHUTDOWN_TIMEOUT: z.string().default('10000'),
 });
 
 // process.env is automatically loaded by Bun from .env
@@ -84,35 +85,46 @@ const server = app.listen(port, () => {
 });
 
 // Graceful Shutdown
-const shutdown = async () => {
-  logger.info('Shutting down server...');
-  
-  server.close((err) => {
-    if (err) {
-      logger.error(err, 'Error closing HTTP server');
-    } else {
-      logger.info('HTTP server closed');
-    }
-  });
+const shutdown = async (signal: string) => {
+  logger.info({ signal }, 'Graceful shutdown initiated');
+
+  // Force close after timeout
+  const timeout = setTimeout(() => {
+    logger.error('Shutdown timed out, forcing exit');
+    process.exit(1);
+  }, parseInt(env.SHUTDOWN_TIMEOUT, 10));
 
   try {
+    // 1. Stop accepting new connections
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => {
+        if (err) {
+          logger.error(err, 'Error closing HTTP server');
+          return reject(err);
+        }
+        logger.info('HTTP server closed');
+        resolve();
+      });
+    });
+
+    // 2. Disconnect from Database
     await prisma.$disconnect();
     logger.info('Prisma disconnected');
-  } catch (err) {
-    logger.error(err, 'Error disconnecting Prisma');
-  }
 
-  try {
+    // 3. Disconnect from Redis
     await redis.quit();
     logger.info('Redis disconnected');
-  } catch (err) {
-    logger.error(err, 'Error disconnecting Redis');
-  }
 
-  process.exit(0);
+    clearTimeout(timeout);
+    logger.info('Shutdown complete');
+    process.exit(0);
+  } catch (err) {
+    logger.error(err, 'Error during shutdown');
+    process.exit(1);
+  }
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export { app, prisma, redis };
