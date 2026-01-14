@@ -1,0 +1,23 @@
+meta {
+  name: login
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{BASE_URL}}/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "kiran@amrita.edu",
+    "password": "password123"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

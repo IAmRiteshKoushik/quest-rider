@@ -1,0 +1,22 @@
+meta {
+  name: resend-otp
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{BASE_URL}}/auth/resend-otp
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "kiran@amrita.edu"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
