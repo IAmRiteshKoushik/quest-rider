@@ -26,7 +26,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
     await prisma.$queryRaw`SELECT 1`;
     healthStatus.services.db = 'up';
   } catch (error) {
-    logger.error(error, 'Database health check failed');
+    logger.error({ context: 'HEALTH', err: error }, 'Database health check failed');
     healthStatus.services.db = 'down';
     healthStatus.status = 'error';
   }
@@ -36,7 +36,7 @@ export async function getHealthStatus(): Promise<HealthStatus> {
     await redis.ping();
     healthStatus.services.redis = 'up';
   } catch (error) {
-    logger.error(error, 'Redis health check failed');
+    logger.error({ context: 'HEALTH', err: error }, 'Redis health check failed');
     healthStatus.services.redis = 'down';
     healthStatus.status = 'error';
   }
