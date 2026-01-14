@@ -76,6 +76,9 @@ export const refresh = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Token refreshed' });
   } catch (error) {
     clearCookies(res);
+    if (error instanceof Error && 'statusCode' in error) {
+      throw error;
+    }
     logger.warn({ context: 'REFRESH' }, 'Invalid refresh token');
     res.status(401).json({ message: 'Invalid refresh token' });
   }
