@@ -1,17 +1,12 @@
 import express from 'express';
 import helmet from 'helmet';
-import pino from 'pino';
 import pinoHttp from 'pino-http';
 import Redis from 'ioredis';
 import { PrismaClient } from './generated/prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from './env';
-
-// Initialize Logger
-const logger = pino({
-  level: env.LOG_LEVEL,
-});
+import { logger } from './logger';
 
 // Initialize Prisma Client with PostgreSQL Adapter
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -111,7 +106,7 @@ const shutdown = async (signal: string) => {
   }
 };
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));
 
 export { app, prisma, redis };
