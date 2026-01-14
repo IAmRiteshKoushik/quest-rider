@@ -19,16 +19,17 @@ enum SubmissionTypeEnum {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  name         String
-  bio          String?
-  email        String       @unique
-  password     String
-  phoneNumber  String
-  role         UserRoleEnum @default(STUDENT)
-  refreshToken String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  name            String
+  bio             String?
+  email           String       @unique
+  password        String
+  phoneNumber     String
+  profileImageUrl String?
+  role            UserRoleEnum @default(STUDENT)
+  refreshToken    String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   Courses           Course[]
   CourseEnrollments CourseEnrollments[]
@@ -54,6 +55,8 @@ model Course {
   educatorId  String
   title       String
   description String?
+  logoUrl     String?
+  rating      Float     @default(5.0)
   isPublished Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
