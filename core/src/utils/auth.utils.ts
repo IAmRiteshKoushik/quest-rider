@@ -1,21 +1,13 @@
 import { encrypt, decrypt } from 'paseto-ts/v4';
 import * as argon2 from 'argon2';
 import { env } from '../env';
+import type { TokenPayload } from '../types/auth.types';
 
 // Your PASERK v4.local key
 const KEY = env.APP_SECRET; // e.g., 'k4.local.…'
 
 // issuer
 const ISSUER = 'QuestRider';
-
-export interface TokenPayload {
-  userId: string;
-  email: string;
-  role: string;
-  expiresAt: string;
-  issuer: string;
-  [key: string]: any;
-}
 
 export const hashPassword = async (plain: string): Promise<string> => {
   return await argon2.hash(plain);
