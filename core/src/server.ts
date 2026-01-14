@@ -66,7 +66,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Start Server
-const port = parseInt(env.PORT, 10);
+const port = env.PORT;
 const server = app.listen(port, () => {
   logger.info(`Server listening on port ${port}`);
 });
@@ -79,7 +79,7 @@ const shutdown = async (signal: string) => {
   const timeout = setTimeout(() => {
     logger.error('Shutdown timed out, forcing exit');
     process.exit(1);
-  }, parseInt(env.SHUTDOWN_TIMEOUT, 10));
+  }, env.SHUTDOWN_TIMEOUT);
 
   try {
     // 1. Stop accepting new connections
