@@ -7,6 +7,7 @@ const envSchema = z.object({
   APP_SECRET: z.string().startsWith("k4.local."),
   ACCESS_TOKEN_EXPIRE_MINUTES: z.coerce.number().default(15),
   REFRESH_TOKEN_EXPIRE_DAYS: z.coerce.number().default(30),
+  TOKEN_ISSUER: z.string().default("QuestRider"),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   SHUTDOWN_TIMEOUT: z.coerce.number().int().default(10000),

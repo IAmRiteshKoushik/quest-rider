@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/auth.utils';
 import { throwError } from '../utils/errorFunction';
 import type { TokenPayload } from '../types/auth.types';
+import { env } from '../env';
 
 // Extend Express Request interface to include user
 declare global {
@@ -23,13 +24,18 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     return throwError(401, "Unauthorized", 'AUTH', "No access token found");
   }
 
-  const payload = await verifyToken<TokenPayload>(token);
+  let payload: TokenPayload;
+  try {
+    payload = await verifyToken<TokenPayload>(token);
+  } catch (error) {
+    return throwError(401, 'Unauthorized', 'AUTH', 'Invalid or tampered token');
+  }
 
   if (new Date(payload.expiresAt) < new Date()) {
     return throwError(401, 'Unauthorized', 'AUTH', 'Expired access token');
   }
 
-  if (payload.issuer !== 'QuestRider') {
+  if (payload.issuer !== env.TOKEN_ISSUER) {
     return throwError(401, 'Unauthorized', 'AUTH', 'Invalid token issuer');
   }
 

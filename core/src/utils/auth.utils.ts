@@ -2,12 +2,13 @@ import { encrypt, decrypt } from 'paseto-ts/v4';
 import * as argon2 from 'argon2';
 import { env } from '../env';
 import type { TokenPayload } from '../types/auth.types';
+import { randomInt } from 'node:crypto';
 
 // Your PASERK v4.local key
 const KEY = env.APP_SECRET; // e.g., 'k4.local.…'
 
 // issuer
-const ISSUER = 'QuestRider';
+const ISSUER = env.TOKEN_ISSUER;
 
 export const hashPassword = async (plain: string): Promise<string> => {
   return await argon2.hash(plain);
@@ -56,11 +57,12 @@ export const verifyToken = async <T extends { [key: string]: any; } = TokenPaylo
   return result.payload; // decrypt returns { payload, footer }
 };
 
-export const generateOTP = (length = 6): string => {
-  const digits = '0123456789';
-  let otp = '';
-  for (let i = 0; i < length; i++) {
-    otp += digits[Math.floor(Math.random() * 10)];
-  }
+export function generateOTP(length = 6): string {
+  const max = 10 ** length;       // e.g., 1000000 for length 6
+  const min = Math.floor(max / 10); // e.g., 100000 for length 6
+
+  // crypto.randomInt generates a secure random integer in [min, max)
+  const otp = randomInt(min, max).toString().padStart(length, '0');
+
   return otp;
-};
+}
