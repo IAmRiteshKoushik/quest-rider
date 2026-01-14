@@ -10,20 +10,28 @@ import { authRouter } from './routes/auth.routes';
 import { prisma } from './db';
 import { redis } from './redis';
 import { errorHandler } from './middlewares/error.middleware';
+import requestID from 'express-request-id';
 
 // Initialize Express App
 const app = express();
 
 // Setup Middleware
-app.use(helmet());
-app.use(cors());
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+
+app.use(requestID());
 app.use(pinoHttp({ 
   logger,
   autoLogging: false
 }));
+app.use(helmet());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true,
+}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Basic Health Check Route
 app.get('/health', async (req, res) => {
