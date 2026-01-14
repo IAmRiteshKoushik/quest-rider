@@ -27,7 +27,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
   let payload: TokenPayload;
   try {
     payload = await verifyToken<TokenPayload>(token);
-  } catch (error) {
+  } catch (_) {
     return throwError(401, 'Unauthorized', 'AUTH', 'Invalid or tampered token');
   }
 

@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 import { logger } from '../logger';
 import { AppError } from '../utils/errorFunction';
 
@@ -6,7 +6,6 @@ export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
 ) => {
   let statusCode = 500;
   let message = "Oops! Something went wrong. Please try again later.";

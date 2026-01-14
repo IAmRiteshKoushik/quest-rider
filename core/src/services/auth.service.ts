@@ -12,7 +12,7 @@ import {
 } from "../utils/auth.utils";
 import { logger } from "../logger";
 import { prisma } from "../db";
-import { throwError, AppError } from "../utils/errorFunction";
+import { throwError } from "../utils/errorFunction";
 
 export async function register(data: RegisterDto): Promise<void> {
   const { email, phoneNumber, password, name } = data;
