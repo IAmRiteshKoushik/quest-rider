@@ -4,22 +4,9 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import Redis from 'ioredis';
 import { PrismaClient } from './generated/prisma/client';
-import { z } from 'zod';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-
-
-const envSchema = z.object({
-  PORT: z.string().default('8080'),
-  DATABASE_URL: z.string(),
-  REDIS_URL: z.string(),
-  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
-  SHUTDOWN_TIMEOUT: z.string().default('10000'),
-});
-
-// process.env is automatically loaded by Bun from .env
-const env = envSchema.parse(process.env);
+import { env } from './env';
 
 // Initialize Logger
 const logger = pino({
