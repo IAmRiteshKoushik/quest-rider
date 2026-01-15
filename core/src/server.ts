@@ -1,10 +1,9 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
-import pinoHttp from "pino-http";
 import cookieParser from "cookie-parser";
 import { env } from "./env";
-import { logger } from "./logger";
+import { logger, httpLogger } from "./logger";
 import { getHealthStatus } from "./services/health.service";
 import { authRouter } from "./routes/auth.routes";
 import { prisma } from "./db";
@@ -20,62 +19,7 @@ app.use(requestID());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-    pinoHttp({
-        logger,
-        genReqId: (req) => (req as any).id,
-        customLogLevel: (req, res, err) => {
-            if (res.statusCode >= 500 || err) return "error";
-            if (res.statusCode >= 400) return "warn";
-            return "info";
-        },
-        customProps: (req, res) => {
-            return (res as any).errInfo || {};
-        },
-        customSuccessMessage: (req, res) => {
-            return `${res.statusCode} ${req.method} ${req.url}`;
-        },
-        customErrorMessage: (req, res, err) => {
-            return `${req.method} ${req.url} failed with ${res.statusCode}: ${err.message}`;
-        },
-        serializers: {
-            req: (req) => {
-                const isDev = env.NODE_ENV === "development";
-                const body = req.raw.body;
-                const cookieHeader = req.headers["cookie"];
-
-                return {
-                    method: req.method,
-                    url: req.url,
-                    query: req.query,
-                    userAgent: req.headers["user-agent"],
-                    ...(isDev && body && { body }),
-                    ...(isDev &&
-                        cookieHeader && {
-                            cookies: cookieHeader
-                                .split("; ")
-                                .reduce(
-                                    (
-                                        acc: Record<string, string>,
-                                        cookie: string
-                                    ) => {
-                                        const [name, ...rest] =
-                                            cookie.split("=");
-                                        if (name) acc[name] = rest.join("=");
-                                        return acc;
-                                    },
-                                    {}
-                                ),
-                        }),
-                };
-            },
-            res: (res) => ({
-                statusCode: res.statusCode,
-            }),
-        },
-        quietReqLogger: true,
-    })
-);
+app.use(httpLogger);
 app.use(helmet());
 app.use(
     cors({
@@ -132,17 +76,16 @@ const shutdown = async (signal: string) => {
 
         // 2. Disconnect from Database
         await prisma.$disconnect();
-        logger.info({ context: "SERVER" }, "Prisma disconnected");
+        logger.info("Prisma disconnected");
 
         // 3. Disconnect from Redis
         await redis.quit();
-        logger.info({ context: "SERVER" }, "Redis disconnected");
-
+        logger.info("Redis disconnected");
         clearTimeout(timeout);
-        logger.info({ context: "SERVER" }, "Shutdown complete");
+        logger.info("Shutdown complete");
         process.exit(0);
     } catch (err) {
-        logger.error({ context: "SERVER", err }, "Error during shutdown");
+        logger.error("Error during shutdown");
         process.exit(1);
     }
 };
