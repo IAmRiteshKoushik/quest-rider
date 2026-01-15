@@ -13,9 +13,8 @@ import {
     loginSchema,
 } from "../schemas/auth.schema";
 import { env } from "../env";
-import { logger } from "../logger";
 import { handleValidation } from "../utils/handleValidation";
-import { throwError } from "../utils/errorFunction";
+import { UnauthorizedError } from "../utils/errors";
 
 function setCookies(res: Response, accessToken: string, refreshToken: string) {
     res.cookie("accessToken", accessToken, {
@@ -40,79 +39,60 @@ function clearCookies(res: Response) {
 }
 
 export const register = async (req: Request, res: Response) => {
-    const data: RegisterDto = handleValidation(
-        registerSchema,
-        req.body,
-        "REGISTER"
-    );
+    const data: RegisterDto = handleValidation(registerSchema, req.body);
     await AuthService.register(data);
 
-    logger.info({ context: "REGISTER" }, "Registration successful, OTP sent");
     res.status(200).json({ message: "OTP sent successfully" });
 };
 
 export const verifyOtp = async (req: Request, res: Response) => {
-    const data: VerifyOtpDto = handleValidation(
-        verifyOtpSchema,
-        req.body,
-        "VERIFY-OTP"
-    );
+    const data: VerifyOtpDto = handleValidation(verifyOtpSchema, req.body);
     const { user, tokens } = await AuthService.verifyOtp(data);
 
     setCookies(res, tokens.accessToken, tokens.refreshToken);
-    logger.info({ context: "VERIFY-OTP" }, "OTP verified successfully");
     res.status(200).json(user);
 };
 
 export const resendOtp = async (req: Request, res: Response) => {
-    const { email }: ResendOtpDto = handleValidation(
-        resendOtpSchema,
-        req.body,
-        "RESEND-OTP"
-    );
+    const { email }: ResendOtpDto = handleValidation(resendOtpSchema, req.body);
     await AuthService.resendOtp(email);
 
-    logger.info({ context: "RESEND-OTP" }, "OTP resent successfully");
     res.status(200).json({ message: "OTP resent successfully" });
 };
 
 export const login = async (req: Request, res: Response) => {
     const { email, password }: LoginDto = handleValidation(
         loginSchema,
-        req.body,
-        "LOGIN"
+        req.body
     );
     const { user, tokens } = await AuthService.login(email, password);
 
     setCookies(res, tokens.accessToken, tokens.refreshToken);
-    logger.info({ context: "LOGIN" }, "Login successful");
     res.status(200).json(user);
 };
 
 export const refresh = async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
-        return throwError(401, "Missing refresh token", "REFRESH");
+        throw new UnauthorizedError("Missing refresh token");
     }
 
     try {
         const { tokens } = await AuthService.refresh(refreshToken);
         setCookies(res, tokens.accessToken, tokens.refreshToken);
-        logger.info({ context: "REFRESH" }, "Token refreshed successfully");
         res.status(200).json({ message: "Token refreshed" });
     } catch (error) {
         clearCookies(res);
-        if (error instanceof Error && "statusCode" in error) {
-            throw error;
-        }
-        logger.warn({ context: "REFRESH" }, "Invalid refresh token");
-        res.status(401).json({ message: "Invalid refresh token" });
+        throw error;
     }
 };
 
 export const logout = async (req: Request, res: Response) => {
+    const userId = req.userId;
+    if (userId) {
+        await AuthService.logout(userId);
+    }
     clearCookies(res);
-    logger.info({ context: "LOGOUT" }, "Logged out successfully");
     res.status(200).json({ message: "Logged out successfully" });
 };
 
@@ -120,16 +100,13 @@ export const session = async (req: Request, res: Response) => {
     const userId = req.userId;
 
     if (!userId) {
-        return throwError(
-            401,
+        throw new UnauthorizedError(
             "Unauthorized",
-            "SESSION",
             "No user ID found in request"
         );
     }
     const user = await AuthService.getSession(userId);
 
-    logger.info({ context: "SESSION" }, "Session retrieved successfully");
     res.status(200).json({
         id: user.id,
         email: user.email,

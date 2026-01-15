@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/auth.utils";
-import { throwError } from "../utils/errorFunction";
+import { UnauthorizedError, ForbiddenError } from "../utils/errors";
 import type { TokenPayload } from "../types/auth.types";
 import { env } from "../env";
 
@@ -25,27 +25,22 @@ export const authenticate = async (
     const token = req.cookies.accessToken;
 
     if (!token) {
-        return throwError(401, "Unauthorized", "AUTH", "No access token found");
+        throw new UnauthorizedError("No access token found");
     }
 
     let payload: TokenPayload;
     try {
         payload = await verifyToken<TokenPayload>(token);
-    } catch (_) {
-        return throwError(
-            401,
-            "Unauthorized",
-            "AUTH",
-            "Invalid or tampered token"
-        );
+    } catch (err) {
+        throw new UnauthorizedError("Invalid or tampered token", err);
     }
 
     if (new Date(payload.expiresAt) < new Date()) {
-        return throwError(401, "Unauthorized", "AUTH", "Expired access token");
+        throw new UnauthorizedError("Expired access token");
     }
 
     if (payload.issuer !== env.TOKEN_ISSUER) {
-        return throwError(401, "Unauthorized", "AUTH", "Invalid token issuer");
+        throw new UnauthorizedError("Invalid token issuer");
     }
 
     // Attach user info to request
@@ -57,12 +52,9 @@ export const authenticate = async (
 };
 
 export const requireRole = (role: string) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (req: Request, _res: Response, next: NextFunction) => {
         if (!req.role || req.role !== role) {
-            return throwError(
-                403,
-                "Forbidden",
-                "AUTH",
+            throw new ForbiddenError(
                 `Required role was ${role}, but user role is ${req.role}`
             );
         }

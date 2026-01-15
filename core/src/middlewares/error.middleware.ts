@@ -1,38 +1,42 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { logger } from "../logger";
-import { AppError } from "../utils/errorFunction";
+import { AppError, ErrorCode } from "../utils/errors";
+import { env } from "../env";
 
-export const errorHandler = (err: Error, req: Request, res: Response) => {
+export const errorHandler = (
+    err: Error,
+    req: Request,
+    res: Response,
+    _next: NextFunction
+) => {
     let statusCode = 500;
+    let errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
     let message = "Oops! Something went wrong. Please try again later.";
-    let context = "unknown";
     let details = undefined;
 
     if (err instanceof AppError) {
         statusCode = err.statusCode;
+        errorCode = err.errorCode;
         message = err.message;
-        context = err.context || context;
         details = err.details;
     }
 
-    const logData = {
-        context,
-        message: err.message,
+    const isProduction = env.NODE_ENV === "production";
+
+    // Attach info for the request logger (pino-http)
+    (res as any).errInfo = {
+        errorCode,
         details,
-        err: statusCode >= 500 ? err : undefined,
-        path: req.path,
-        method: req.method,
-        reqBody: statusCode < 500 ? req.body : undefined,
-        statusCode,
+        message: err.message,
+        // stack: isProduction ? undefined : err.stack,
     };
 
-    if (statusCode >= 500) {
-        logger.error(logData, "Request failed");
-    } else {
-        logger.warn(logData, "Request warning");
-    }
-
     res.status(statusCode).json({
-        error: message,
+        error: errorCode,
+        message:
+            statusCode >= 500 && isProduction
+                ? "Oops! Something went wrong. Please try again later."
+                : message,
+        details,
     });
 };

@@ -1,10 +1,9 @@
 import { type ZodType } from "zod";
-import { throwError } from "./errorFunction";
+import { ValidationError } from "./errors";
 
 export function handleValidation<T>(
     schema: ZodType<T>,
-    data: unknown,
-    context: string
+    data: unknown
 ): T | never {
     const result = schema.safeParse(data);
 
@@ -14,7 +13,7 @@ export function handleValidation<T>(
             const field = issue.path.join(".");
             errorJson[field] = issue.message;
         });
-        return throwError(400, "Invalid request data", context, errorJson);
+        throw new ValidationError(errorJson);
     }
 
     return result.data;
