@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-import { logger } from "../logger";
 import { AppError, ErrorCode } from "../utils/errors";
 import { env } from "../env";
 

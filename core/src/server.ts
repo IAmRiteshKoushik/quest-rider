@@ -6,6 +6,8 @@ import { env } from "./env";
 import { logger, httpLogger } from "./logger";
 import { getHealthStatus } from "./services/health.service";
 import { authRouter } from "./routes/auth.routes";
+import { courseRouter } from "./routes/course.routes";
+import { meRouter } from "./routes/me.routes";
 import { prisma } from "./db";
 import { redis } from "./redis";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -38,6 +40,8 @@ app.get("/health", async (req, res) => {
 
 // Mount Routes
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/courses", courseRouter);
+app.use("/api/v1/me", meRouter);
 
 // Error Handler
 app.use(errorHandler);
@@ -84,7 +88,7 @@ const shutdown = async (signal: string) => {
         clearTimeout(timeout);
         logger.info("Shutdown complete");
         process.exit(0);
-    } catch (err) {
+    } catch {
         logger.error("Error during shutdown");
         process.exit(1);
     }
