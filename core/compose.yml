@@ -1,63 +1,63 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: questrider_postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - questrider_data:/var/lib/postgresql/data
+    postgres:
+        image: postgres:17-alpine
+        container_name: questrider_postgres
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        ports:
+            - "5432:5432"
+        volumes:
+            - questrider_postgres_data:/var/lib/postgresql/data
 
-  drizzle-gate:
-    image: ghcr.io/drizzle-team/gateway:latest
-    container_name: questrider_drizzle
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/questrider
-      STORE_PATH: /app
-    restart: on-failure
-    depends_on:
-      - postgres
-    ports:
-      - "4983:4983"
-    volumes:
-      - questrider_drizzle_gateway:/app
-    networks:
-      - rider_network
+    drizzle-gate:
+        image: ghcr.io/drizzle-team/gateway:latest
+        container_name: questrider_drizzle
+        environment:
+            DATABASE_URL: postgresql://postgres:postgres@postgres:5432/questrider
+            STORE_PATH: /app
+        restart: on-failure
+        depends_on:
+            - postgres
+        ports:
+            - "4983:4983"
+        volumes:
+            - questrider_drizzle_gateway:/app
+        networks:
+            - rider_network
 
-  valkey:
-    image: valkey/valkey:8.1.1-alpine
-    container_name: questrider_redis
-    restart: on-failure
-    ports:
-      - "6379:6379"
-    command: valkey-server --appendonly yes # persistance
-    volumes:
-      - questrider_valkey_data:/data
-    networks:
-      - rider_network
+    valkey:
+        image: valkey/valkey:8.1.1-alpine
+        container_name: questrider_redis
+        restart: on-failure
+        ports:
+            - "6379:6379"
+        command: valkey-server --appendonly yes # persistance
+        volumes:
+            - questrider_valkey_data:/data
+        networks:
+            - rider_network
 
-  # UI for Valkey (cache)
-  insight:
-    image: redislabs/redisinsight:latest
-    container_name: questrider_insight
-    restart: on-failure
-    ports:
-      - "5540:5540"
-    depends_on:
-      - valkey
-    environment:
-      - VALKEY_HOST=valkey
-      - VALKEY_PORT=6379
-    networks:
-      - rider_network
+    # UI for Valkey (cache)
+    insight:
+        image: redislabs/redisinsight:latest
+        container_name: questrider_insight
+        restart: on-failure
+        ports:
+            - "5540:5540"
+        depends_on:
+            - valkey
+        environment:
+            - VALKEY_HOST=valkey
+            - VALKEY_PORT=6379
+        networks:
+            - rider_network
 
 networks:
-  rider_network:
-    driver: bridge
+    rider_network:
+        driver: bridge
 
 volumes:
-  questrider_postgres_data:
-  questrider_drizzle_gateway:
-  questrider_valkey_data:
+    questrider_postgres_data:
+    questrider_drizzle_gateway:
+    questrider_valkey_data:

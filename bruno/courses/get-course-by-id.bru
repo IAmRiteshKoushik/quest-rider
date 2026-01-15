@@ -1,0 +1,20 @@
+meta {
+  name: get-course-by-id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{BASE_URL}}/courses/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 4e6b0108-af03-4a3a-95e1-24fea6b77727
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
