@@ -1,11 +1,11 @@
 meta {
-  name: health
+  name: get-all-courses
   type: http
-  seq: 3
+  seq: 1
 }
 
 get {
-  url: http://localhost:8080/health
+  url: {{BASE_URL}}/courses
   body: none
   auth: inherit
 }
